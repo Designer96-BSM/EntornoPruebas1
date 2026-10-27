@@ -11,8 +11,8 @@ const CONFIG = {
   minLoadTime: 900,      // ms mínimos de la animación de carga
   maxLoadWait: 10000,    // ms máximos esperando un video
   heroSpeed: 1,          // velocidad del bucle (1 = normal, 0.5 = mitad)
-  smoothing: 0.14,       // scroll: más alto = responde más rápido
-  touchSmoothing: 0.35,  // en el teléfono el scroll ya tiene inercia
+  smoothing: 0.3,        // scroll: más alto = responde más rápido
+  touchSmoothing: 0.55, // en el teléfono el scroll ya tiene inercia
   fadeScreens: 0.5       // cuánto scroll (en pantallas) dura el cambio del video 1 al 2
 };
 
@@ -37,23 +37,31 @@ const els = {
 
 /* ---------- Utilidades para recorrer un video ---------- */
 
-// Un "buscador" por video: pide un tiempo a la vez y espera a que el
-// video lo muestre antes de pedir el siguiente (evita acumular saltos).
+// Mantiene una sola búsqueda activa y sustituye las pendientes por la más
+// reciente para que el video no se quede reproduciendo posiciones atrasadas.
 function makeSeeker(video) {
   let seeking = false;
-  let startedAt = 0;
-  let last = -1;
+  let queuedTime = null;
 
-  video.addEventListener("seeked", () => { seeking = false; });
+  function seekNext() {
+    if (seeking || queuedTime === null) return;
+
+    const t = queuedTime;
+    queuedTime = null;
+    if (Math.abs(video.currentTime - t) < 0.001 && !video.seeking) return;
+
+    seeking = true;
+    video.currentTime = t;
+  }
+
+  video.addEventListener("seeked", () => {
+    seeking = false;
+    seekNext();
+  });
 
   return function seek(t) {
-    const now = performance.now();
-    if (seeking && now - startedAt > 300) seeking = false; // salto sin respuesta
-    if (seeking || t === last) return;
-    seeking = true;
-    startedAt = now;
-    last = t;
-    video.currentTime = t;
+    queuedTime = t;
+    seekNext();
   };
 }
 
