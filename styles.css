@@ -1,0 +1,232 @@
+:root {
+  --deep: #0d3b66;
+  --sky: #5aa9e6;
+  --orange: #f26a21;
+  --sun: #ffc65c;
+
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Outfit", "Helvetica Neue", Arial, sans-serif;
+  --font-script: "Caveat", "Segoe Script", cursive;
+
+  --scene-height: 600vh; /* más alto = el video del scroll avanza más lento */
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--deep);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.5em;
+}
+
+p { margin: 0 0 1em; max-width: 56ch; }
+
+.script {
+  font-family: var(--font-script);
+  font-weight: 700;
+  font-size: 2.1rem;
+  line-height: 1.1;
+  color: var(--sun);
+}
+
+/* ---------- Loader ---------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  background: linear-gradient(180deg, var(--sky) 0%, var(--deep) 100%);
+  transition: opacity 0.7s ease 0.15s, visibility 0.7s ease 0.15s, transform 0.7s ease 0.15s;
+}
+.loader.is-done { opacity: 0; visibility: hidden; transform: translateY(-3%); }
+.loader__brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 8vw, 4rem);
+  line-height: 1;
+}
+.loader__route { width: min(340px, 80vw); height: auto; overflow: visible; margin-top: 0.4rem; }
+.loader__route path { fill: none; stroke-linecap: round; }
+.loader__track { stroke: rgba(255, 255, 255, 0.45); stroke-width: 2.5; stroke-dasharray: 3 7; }
+.loader__fill {
+  stroke: var(--orange);
+  stroke-width: 4;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+#routePlane path { fill: #fff; stroke: none; }
+#routePlane { filter: drop-shadow(0 2px 4px rgba(8, 36, 64, 0.4)); }
+.loader__count { margin: 0.3rem 0 0; font-size: 0.95rem; opacity: 0.85; font-variant-numeric: tabular-nums; }
+.loader__error { color: #fff; background: rgba(0, 0, 0, 0.3); padding: 0.8rem 1rem; border-radius: 0.6rem; text-align: center; max-width: 46ch; }
+
+/* ---------- Barra de progreso ---------- */
+.progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  z-index: 50;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--orange);
+}
+
+/* ---------- Video de fondo (los dos) ---------- */
+video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: var(--deep);
+}
+
+/* ---------- Video 1: capa superior que se desvanece al hacer scroll ---------- */
+.layer-hero {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  will-change: opacity;
+}
+.hero__shade,
+.scene__shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, rgba(8, 36, 64, 0.5), transparent 60%),
+    linear-gradient(to top, rgba(8, 36, 64, 0.45), transparent 40%);
+}
+.hero__text {
+  position: absolute;
+  left: clamp(1.2rem, 6vw, 5rem);
+  bottom: clamp(5rem, 14vh, 8rem);
+  width: min(560px, 86vw);
+  text-shadow: 0 2px 18px rgba(8, 36, 64, 0.45);
+}
+.hero__text h1 { font-size: clamp(2.2rem, 5.6vw, 4.2rem); }
+.hero__text p { font-size: 1.2rem; }
+
+.hint {
+  position: absolute;
+  bottom: 1.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hint::after {
+  content: "";
+  width: 2px;
+  height: 36px;
+  background: var(--orange);
+  transform-origin: top;
+  animation: hint 1.8s ease-in-out infinite;
+}
+@keyframes hint {
+  0%   { transform: scaleY(0); }
+  60%  { transform: scaleY(1); }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+/* ---------- Escena: video 2 controlado por el scroll ---------- */
+.scene {
+  position: relative;
+  height: var(--scene-height);
+}
+.scene__sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.scene__status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  background: rgba(8, 36, 64, 0.6);
+  transition: opacity 0.4s;
+}
+.scene__status.is-hidden { opacity: 0; pointer-events: none; }
+.scene__status.is-error { background: rgba(120, 20, 20, 0.85); max-width: min(520px, 88vw); text-align: center; border-radius: 1rem; }
+
+.chapter {
+  position: absolute;
+  top: 50%;
+  width: min(540px, 86vw);
+  text-shadow: 0 2px 18px rgba(8, 36, 64, 0.45);
+  opacity: 0;
+  transform: translateY(calc(-50% + 24px));
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+.chapter.is-active {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+.chapter h2 { font-size: clamp(2rem, 5vw, 3.6rem); }
+.chapter p { font-size: 1.2rem; }
+
+.chapter--left   { left: clamp(1.2rem, 6vw, 5rem); }
+.chapter--right  { right: clamp(1.2rem, 6vw, 5rem); text-align: right; }
+.chapter--right p { margin-left: auto; }
+.chapter--center { left: 50%; text-align: center; width: min(640px, 88vw); margin-left: calc(min(640px, 88vw) / -2); }
+.chapter--center p { margin-inline: auto; }
+
+/* ---------- Teléfono ---------- */
+@media (max-width: 760px) {
+  .chapter--right { text-align: left; right: auto; left: clamp(1.2rem, 6vw, 5rem); }
+  .chapter--right p { margin-left: 0; }
+  .hero__shade,
+  .scene__shade {
+    background: linear-gradient(to top, rgba(8, 36, 64, 0.7), rgba(8, 36, 64, 0.1) 70%);
+  }
+  .chapter { top: auto; bottom: 16%; transform: translateY(24px); }
+  .chapter.is-active { transform: translateY(0); }
+  .chapter--center { left: clamp(1.2rem, 6vw, 5rem); margin-left: 0; text-align: left; }
+  .chapter--center p { margin-inline: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .chapter { transition: none; }
+  .hint::after { animation: none; }
+}
+
+/* Orden de capas dentro de la pantalla fija */
+.scene__shade { z-index: 2; }
+.chapter { z-index: 3; }
+.scene__status { z-index: 5; }

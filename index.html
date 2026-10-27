@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prueba de videos · Ping-pong + Scroll</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fraunces:opsz,wght@9..144,700&family=Outfit:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Animación de carga breve -->
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <p class="loader__brand">Cargando</p>
+    <svg class="loader__route" viewBox="0 0 320 120" aria-hidden="true">
+      <path class="loader__track" d="M10 104 Q160 -44 310 104" pathLength="100"/>
+      <path class="loader__fill" id="routeFill" d="M10 104 Q160 -44 310 104" pathLength="100"/>
+      <g id="routePlane"><path d="M-9 -6 L11 0 L-9 6 L-5 0 Z"/></g>
+    </svg>
+    <p class="loader__count" id="loaderCount">0%</p>
+    <p class="loader__error" id="loaderError" hidden></p>
+  </div>
+
+  <div class="progress" aria-hidden="true"><span id="progressFill"></span></div>
+
+  <main>
+
+    <!-- UNA SOLA PANTALLA FIJA con los dos videos en el mismo cuadro:
+         - Arriba está el VIDEO 1 en bucle ping-pong (capa #heroLayer).
+         - Al empezar a hacer scroll, el video 1 se desvanece en el mismo
+           lugar y deja ver el VIDEO 2, que avanza y retrocede con el scroll.
+         Para probar otros videos, cambia data-webm y data-mp4 de cada <video>. -->
+    <section class="scene" id="scene" aria-label="Video 1 en bucle y video 2 controlado por el scroll">
+      <div class="scene__sticky">
+
+        <!-- VIDEO 2: controlado por el scroll (capa de abajo) -->
+        <video id="stage"
+               data-webm="video-scroll.webm" data-mp4="video-scroll.mp4" data-fps="24"
+               muted playsinline preload="auto"
+               disablepictureinpicture disableremoteplayback aria-hidden="true"></video>
+        <div class="scene__shade"></div>
+
+        <article class="chapter chapter--left" data-start="0" data-end="0.3">
+          <h2>Video 2 con el scroll</h2>
+          <p>Cada movimiento de la rueda o del dedo avanza el video un poco.</p>
+        </article>
+
+        <article class="chapter chapter--right" data-start="0.38" data-end="0.65">
+          <h2>Tú marcas el ritmo</h2>
+          <p>Si te detienes, el video se detiene. Si retrocedes, el video vuelve atrás.</p>
+        </article>
+
+        <article class="chapter chapter--center" data-start="0.75" data-end="1.01">
+          <h2>Fin de la prueba</h2>
+          <p class="script">cambia los videos y prueba otra vez</p>
+        </article>
+
+        <!-- VIDEO 1: bucle ping-pong (capa de arriba, se desvanece al hacer scroll) -->
+        <div class="layer-hero" id="heroLayer">
+          <video id="heroVideo"
+                 data-webm="video-hero.webm" data-mp4="video-hero.mp4" data-fps="24"
+                 muted playsinline preload="auto"
+                 disablepictureinpicture disableremoteplayback aria-hidden="true"></video>
+          <div class="hero__shade"></div>
+
+          <div class="hero__text">
+            <h1>Video 1 en bucle</h1>
+            <p>Va de principio a fin y regresa sin saltos. Este texto es de ejemplo.</p>
+            <p class="script">desplázate</p>
+          </div>
+
+          <div class="hint" id="hint">Desplázate</div>
+        </div>
+
+        <p class="scene__status is-hidden" id="sceneStatus" role="status">Cargando el video 2…</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
