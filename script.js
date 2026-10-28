@@ -11,8 +11,9 @@ const CONFIG = {
   minLoadTime: 900,      // ms mínimos de la animación de carga
   maxLoadWait: 10000,    // ms máximos esperando un video
   heroSpeed: 1,          // velocidad del bucle (1 = normal, 0.5 = mitad)
-  smoothing: 0.34,       // scroll: más alto = responde más rápido
-  touchSmoothing: 0.35,  // en el teléfono el scroll ya tiene inercia
+  smoothing: 1,          // scroll del video 2: 1 = sigue la barra al instante;
+                         // bájalo (0.3 a 0.6) si prefieres un movimiento más suave pero con retraso
+  touchSmoothing: 1,     // en el teléfono el scroll ya tiene su propia inercia
   fadeScreens: 0.5       // cuánto scroll (en pantallas) dura el cambio del video 1 al 2
 };
 
@@ -48,7 +49,7 @@ function makeSeeker(video) {
 
   return function seek(t) {
     const now = performance.now();
-    if (seeking && now - startedAt > 300) seeking = false; // salto sin respuesta
+    if (seeking && now - startedAt > 200) seeking = false; // salto sin respuesta
     if (seeking || t === last) return;
     seeking = true;
     startedAt = now;
