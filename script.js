@@ -11,7 +11,7 @@ const CONFIG = {
   minLoadTime: 900,      // ms mínimos de la animación de carga
   maxLoadWait: 10000,    // ms máximos esperando un video
   heroSpeed: 1,          // velocidad del bucle (1 = normal, 0.5 = mitad)
-  smoothing: 0.14,       // scroll: más alto = responde más rápido
+  smoothing: 0.24,       // scroll: más alto = responde más rápido
   touchSmoothing: 0.35,  // en el teléfono el scroll ya tiene inercia
   fadeScreens: 0.5       // cuánto scroll (en pantallas) dura el cambio del video 1 al 2
 };
