@@ -11,8 +11,8 @@ const CONFIG = {
   minLoadTime: 900,      // ms mínimos de la animación de carga
   maxLoadWait: 10000,    // ms máximos esperando un video
   heroSpeed: 1,          // velocidad del bucle (1 = normal, 0.5 = mitad)
-  smoothing: 0.3,        // scroll: más alto = responde más rápido
-  touchSmoothing: 0.55, // en el teléfono el scroll ya tiene inercia
+  smoothing: 0.14,       // scroll: más alto = responde más rápido
+  touchSmoothing: 0.35,  // en el teléfono el scroll ya tiene inercia
   fadeScreens: 0.5       // cuánto scroll (en pantallas) dura el cambio del video 1 al 2
 };
 
@@ -37,31 +37,23 @@ const els = {
 
 /* ---------- Utilidades para recorrer un video ---------- */
 
-// Mantiene una sola búsqueda activa y sustituye las pendientes por la más
-// reciente para que el video no se quede reproduciendo posiciones atrasadas.
+// Un "buscador" por video: pide un tiempo a la vez y espera a que el
+// video lo muestre antes de pedir el siguiente (evita acumular saltos).
 function makeSeeker(video) {
   let seeking = false;
-  let queuedTime = null;
+  let startedAt = 0;
+  let last = -1;
 
-  function seekNext() {
-    if (seeking || queuedTime === null) return;
-
-    const t = queuedTime;
-    queuedTime = null;
-    if (Math.abs(video.currentTime - t) < 0.001 && !video.seeking) return;
-
-    seeking = true;
-    video.currentTime = t;
-  }
-
-  video.addEventListener("seeked", () => {
-    seeking = false;
-    seekNext();
-  });
+  video.addEventListener("seeked", () => { seeking = false; });
 
   return function seek(t) {
-    queuedTime = t;
-    seekNext();
+    const now = performance.now();
+    if (seeking && now - startedAt > 300) seeking = false; // salto sin respuesta
+    if (seeking || t === last) return;
+    seeking = true;
+    startedAt = now;
+    last = t;
+    video.currentTime = t;
   };
 }
 
@@ -83,13 +75,56 @@ function pickSource(video) {
   return options.length ? options[options.length - 1].src : "";
 }
 
-function loadVideo(video, onProgress) {
-  return new Promise((resolve, reject) => {
-    const src = pickSource(video);
-    if (!src) return reject(new Error("Falta data-webm o data-mp4 en el video"));
+// Baja el archivo COMPLETO a memoria y devuelve una dirección local (blob:).
+// Así, al recorrer el video con el scroll no hay que pedir nada a internet:
+// cada salto es instantáneo, igual que cuando abres la página en tu computador.
+async function fetchAsBlobUrl(src, onProgress) {
+  const res = await fetch(src);
+  if (!res.ok) throw new Error("Error " + res.status + " al pedir " + src);
 
+  const ext = src.split("?")[0].split(".").pop().toLowerCase();
+  const type = res.headers.get("Content-Type") || (ext === "webm" ? "video/webm" : "video/mp4");
+  const total = parseInt(res.headers.get("Content-Length"), 10) || 0;
+
+  if (!res.body || !res.body.getReader) {
+    const blob = await res.blob();
+    onProgress(1);
+    return URL.createObjectURL(blob);
+  }
+
+  const reader = res.body.getReader();
+  const chunks = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    if (total) onProgress(Math.min(0.99, received / total));
+  }
+  onProgress(1);
+  return URL.createObjectURL(new Blob(chunks, { type }));
+}
+
+async function loadVideo(video, onProgress) {
+  const src = pickSource(video);
+  if (!src) throw new Error("Falta data-webm o data-mp4 en el video");
+
+  // 1) Intentar descargar el video completo a memoria.
+  //    Si no se puede (por ejemplo, abriendo el archivo con doble clic),
+  //    se usa el video directo, como antes.
+  let url = src;
+  try {
+    url = await fetchAsBlobUrl(src, onProgress);
+  } catch (err) {
+    console.warn("No se pudo descargar completo, se usa el video directo:", err.message);
+  }
+  const fromMemory = url !== src;
+
+  // 2) Preparar el video
+  return new Promise((resolve, reject) => {
     video.muted = true;
-    video.src = src;
+    video.src = url;
 
     const timeout = setTimeout(() => {
       if (video.readyState >= 2) { onProgress(1); resolve(); }
@@ -97,18 +132,21 @@ function loadVideo(video, onProgress) {
     }, CONFIG.maxLoadWait);
 
     function updateBuffered() {
-      if (!video.duration || !video.buffered.length) return;
+      if (fromMemory || !video.duration || !video.buffered.length) return;
       const end = video.buffered.end(video.buffered.length - 1);
       onProgress(Math.min(1, end / video.duration));
     }
 
     video.addEventListener("progress", updateBuffered);
     video.addEventListener("loadedmetadata", updateBuffered);
-    video.addEventListener("canplaythrough", () => {
+
+    // En memoria basta con tener el primer fotograma; en modo directo se espera más
+    video.addEventListener(fromMemory ? "loadeddata" : "canplaythrough", () => {
       clearTimeout(timeout);
       onProgress(1);
       resolve();
     }, { once: true });
+
     video.addEventListener("error", () => {
       clearTimeout(timeout);
       reject(new Error("No se pudo cargar " + src));
@@ -116,7 +154,7 @@ function loadVideo(video, onProgress) {
 
     video.load();
 
-    // En iPhone el video no baja datos hasta que "se reproduce" una vez
+    // En iPhone el video no se prepara hasta que "se reproduce" una vez
     const p = video.play();
     if (p && p.then) p.then(() => video.pause()).catch(() => {});
   });
